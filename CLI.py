@@ -11,6 +11,13 @@ db = mysql.connector.connect(
 
 cursor = db.cursor()
 
+# create a function to send any query to the database
+def sendQuery(query):
+    cursor.execute(query)
+    for row in cursor.fetchall():
+        click.echo(row)
+    click.echo("\n")
+
 
 def option1():
     type = click.prompt("Enter the type of claim:", type=str)
@@ -54,6 +61,30 @@ def option4():
         click.echo(row[0])
     click.echo("\n")
 
+def option5():
+    publisher = click.prompt("Enter the publisher:", type=str)
+    start = click.prompt("Enter the start date:", type=str)
+    end = click.prompt("Enter the end date:", type=str)
+    # create query 
+
+def option6():
+    count = click.prompt("Enter the lower bound:", type=int)
+    # create query
+
+def option7():
+    type = click.prompt("Enter the type of claim:", type=str)
+    # create query
+
+def option8():
+    author = click.prompt("Enter the author:", type=str)
+    # create query
+
+def option9():
+    count = click.prompt("Enter the lower bound:", type=int)
+    start = click.prompt("Enter the start date:", type=str)
+    end = click.prompt("Enter the end date:", type=str)
+    author = click.prompt("Enter the author:", type=str)
+    # create query
 
 def main():
     click.echo("Welcome to SOURCE-OPEN!\n")
