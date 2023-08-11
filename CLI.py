@@ -53,10 +53,7 @@ def option3():
 def option4():
     author = click.prompt("Enter the author:", type=str)
     # create regular query
-    cursor.execute(
-        "SELECT AD.Headline, A.URL FROM Article AS A, ArticleDetails AS AD, WrittenBy AS WB, Author AS AT WHERE A.URL = AD.URL AND A.ArticleID = WB.ArticleID AND WB.AuthorID = AT.AuthorID AND AT.Name = '%s'"
-        (author,)
-    )
+    cursor.execute("SELECT AD.Headline, A.URL FROM Article AS A, ArticleDetails AS AD, WrittenBy AS WB, Author AS AT WHERE AD.URL = A.URL AND A.ArticleID = WB.ArticleID AND WB.AuthorID = AT.AuthorID AND AT.AuthorName  = '%s';", (author,))
     for row in cursor.fetchall():
         click.echo(row[0])
     click.echo("\n")
@@ -65,19 +62,37 @@ def option5():
     publisher = click.prompt("Enter the publisher:", type=str)
     start = click.prompt("Enter the start date:", type=str)
     end = click.prompt("Enter the end date:", type=str)
-    # create query 
+    # create query
+    cursor.execute("SELECT AD.Headline, A.URL FROM Article AS A, ArticleDetails AS AD WHERE AD.URL = A.URL AND AD.PubName = P.PubName AND AD.PubName = '%s' AND A.DatePublished BETWEEN '%s' AND '%s' ORDER BY A.DatePublished;", (publisher, start, end))
+    for row in cursor.fetchall():
+        click.echo(row[0])
+    click.echo("\n")
+
 
 def option6():
     count = click.prompt("Enter the lower bound:", type=int)
     # create query
+    cursor.execute("SELECT AT.AuthorName FROM Author AS AT, WrittenBy AS WB, Claim AS C, CollectionOf AS CO WHERE AT.AuthorID = WB.AuthorID AND WB.ArticleID = CO.ArticleID AND CO.ClaimID = C.ClaimID GROUP BY AT.AuthorName HAVING COUNT(C.numCitations) > %s;", (count,))
+    for row in cursor.fetchall():
+        click.echo(row[0])
+    click.echo("\n")
 
 def option7():
     type = click.prompt("Enter the type of claim:", type=str)
     # create query
+    cursor.execute("SELECT AD.Headline, A.URL FROM Article AS A, ArticleDetails AS AD, CollectionOf AS CO, Claim AS C WHERE AD.URL = A.URL AND A.ArticleID = CO.ArticleID AND CO.ClaimID = C.ClaimID AND C.ClaimType = '%s';", (type,))
+    for row in cursor.fetchall():
+        click.echo(row[0])
+    click.echo("\n")
 
 def option8():
     author = click.prompt("Enter the author:", type=str)
     # create query
+    cursor.execute("SELECT C.ClaimType, AD.Headline FROM Article AS A, ArticleDetails AS AD, CollectionOf AS CO, Claim AS C, WrittenBy AS WB, Author AS AT WHERE AD.URL = A.URL AND A.ArticleID = CO.ArticleID AND CO.ClaimID = C.ClaimID AND A.ArticleID = WB.ArticleID AND WB.AuthorID = AT.AuthorID AND AT.AuthorName = '%s';", (author,))
+    for row in cursor.fetchall():
+        click.echo(row[0])
+    click.echo("\n")
+
 
 def option9():
     count = click.prompt("Enter the lower bound:", type=int)
@@ -85,6 +100,17 @@ def option9():
     end = click.prompt("Enter the end date:", type=str)
     author = click.prompt("Enter the author:", type=str)
     # create query
+    cursor.execute("SELECT AD.Headline FROM Article AS A, ArticleDetails AS AD, CollectionOf AS CO, Claim AS C, WrittenBy AS WB, Author AS AT WHERE AD.URL = A.URL AND A.ArticleID = CO.ArticleID AND CO.ClaimID = C.ClaimID AND A.ArticleID = WB.ArticleID AND WB.AuthorID = AT.AuthorID AND AT.AuthorName = '%s' AND C.ClaimType = 'Tertiary' AND C.numCitations > %s AND A.DatePublished BETWEEN '%s' AND '%s';", (author, count, start, end))
+    for row in cursor.fetchall():
+        click.echo(row[0])
+    click.echo("\n")
+
+def printResults():
+    for result in cursor.stored_results():
+        for row in result.fetchall():
+            click.echo(row[0])
+    click.echo("\n")
+
 
 def main():
     click.echo("Welcome to SOURCE-OPEN!\n")
@@ -124,6 +150,16 @@ def main():
             option3()
         elif choice == 4:
             option4()
+        elif choice == 5:
+            option5()
+        elif choice == 6:
+            option6()
+        elif choice == 7:
+            option7()
+        elif choice == 8:
+            option8()
+        elif choice == 9:
+            option9()
         elif choice == 10:
             click.echo("Exiting Source-Open. Goodbye!")
             break
