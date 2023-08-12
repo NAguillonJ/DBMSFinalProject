@@ -5,7 +5,7 @@ db = mysql.connector.connect(
     host="localhost",
     user="root",
     password="password",
-    database="source_open",
+    database="test_correctness",
     auth_plugin="mysql_native_password",
 )
 
@@ -26,7 +26,6 @@ def option1():
     count = 0
     for result in cursor.stored_results():
         for row in result.fetchall():
-            # click.echo(row[0] + "\n")
             count += 1
     click.echo("Number claims of type " + type + ": " + str(count)) 
     click.echo("-------------------------------------------\n")
@@ -40,7 +39,7 @@ def option2():
     # 1 >= 125
     type = click.prompt("Enter the type of claim", type=str)
     count = click.prompt("Enter the authencity (1 - 5)", type=int)
-    # create query based on stored procdure findClaimsByTypeCitedMoreThan
+    # create query based on stored procdure FindClaimsByTypeAndCitations
     authenticity = 0
     if count == 1:
         authenticity = 125
@@ -90,7 +89,7 @@ def option4():
 def option5():
     publisher = click.prompt("Enter the publisher", type=str)
     start = click.prompt("Enter the start date (YYYY - M - D)", type=str)
-    end = click.prompt("Enter the end date", type=str)
+    end = click.prompt("Enter the end date (YYYY - M - D)", type=str)
     # create query
     cursor.execute("""
                    SELECT AD.Headline, A.URL 
@@ -165,19 +164,30 @@ def option8():
                         AND CO.ClaimID = C.ClaimID 
                         AND A.ArticleID = WB.ArticleID 
                         AND WB.AuthorID = AT.AuthorID 
-                        AND AT.AuthorName = %s;""", (author,))
+                        AND AT.AuthorName LIKE %s;""",   (author,))
     click.echo("All articles by " + author + ":\n")
     for row in cursor.fetchall():
-        click.echo(row + "\n")
+        click.echo(row[0]+ " - " + row[1]  + "\n")
     click.echo("-------------------------------------------\n")
 
 
 def option9():
-    count = click.prompt("Enter the lower bound", type=int)
+    band = click.prompt("Enter band (1 - 5)", type=int)
     start = click.prompt("Enter the start date", type=str)
     end = click.prompt("Enter the end date", type=str)
     author = click.prompt("Enter the author", type=str)
     # create query
+    authenticity = 0
+    if band == 1:
+        authenticity = 125
+    elif band == 2:
+        authenticity = 325
+    elif band == 3:
+        authenticity = 650
+    elif band == 4:
+        authenticity = 875
+    elif band == 5:
+        authenticity = 1000
     cursor.execute("""
                    SELECT DISTINCT AD.Headline 
                    FROM Article AS A, ArticleDetails AS AD, CollectionOf AS CO, Claim AS C, WrittenBy AS WB, Author AS AT 
@@ -190,8 +200,8 @@ def option9():
                         AND C.Type = 'Tertiary' 
                         AND C.numCitations > %s 
                         AND WB.Date BETWEEN %s AND %s;""", 
-                        (author, count, start, end))
-    click.echo("All tertiary claims by " + author + " between " + start + " and " + end + " with more than " + str(count) + " citations:\n")
+                        (author, authenticity, start, end))
+    click.echo("All tertiary claims by " + author + " between " + start + " and " + end + " with authenticity higher than level " + str(band) + ":\n")
     for row in cursor.fetchall():
         click.echo(row[0] + "\n")
     click.echo("-------------------------------------------\n")
@@ -201,7 +211,7 @@ def main():
 
     while True:
         click.echo("Select an option:")
-        click.echo("1. Number of claims per type.")
+        click.echo("1. Show number of claims per type.")
         click.echo(
             "2. Filter by claim type and authenticity rank."
         )
