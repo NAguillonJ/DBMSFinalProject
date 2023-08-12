@@ -20,7 +20,7 @@ def sendQuery(query):
 
 
 def option1():
-    type = click.prompt("Enter the type of claim:", type=str)
+    type = click.prompt("Enter the type of claim", type=str)
     # create query based on stored procdure findClaimsByType
     cursor.callproc("FindClaimsByType", [type])
     for result in cursor.stored_results():
@@ -30,10 +30,10 @@ def option1():
 
 
 def option2():
-    type = click.prompt("Enter the type of claim:", type=str)
-    count = click.prompt("Enter the lower bound:", type=int)
+    type = click.prompt("Enter the type of claim", type=str)
+    count = click.prompt("Enter the lower bound", type=int)
     # create query based on stored procdure findClaimsByTypeCitedMoreThan
-    cursor.callproc("FindClaimsByTypeCitedMoreThan", [type, count])
+    cursor.callproc("FindClaimsByTypeAndCitations", [type, count])
     for result in cursor.stored_results():
         for row in result.fetchall():
             click.echo(row[3])
@@ -41,66 +41,114 @@ def option2():
 
 
 def option3():
-    keyword = click.prompt("Enter the keyword:", type=str)
+    keyword = click.prompt("Enter the keyword", type=str)
     # create query based on stored procdure findArticlesWithKeywordInHeadline
-    cursor.callproc("FindArticlesWithKeywordInHeadline", [keyword])
+    cursor.callproc("FindArticlesByKeyword", [keyword])
     for result in cursor.stored_results():
         for row in result.fetchall():
             click.echo(row[0])
     click.echo("\n")
 
-#DOES NOT WORK
+
 def option4():
-    author = click.prompt("Enter the author:", type=str)
+    author = click.prompt("Enter the author", type=str)
     # create regular query
-    cursor.execute("SELECT AD.Headline, A.URL FROM Article AS A, ArticleDetails AS AD, WrittenBy AS WB, Author AS AT WHERE AD.URL = A.URL AND A.ArticleID = WB.ArticleID AND WB.AuthorID = AT.AuthorID AND AT.AuthorName  = '%s';", (author,))
+    cursor.execute(
+        """SELECT AD.Headline, A.URL 
+        FROM Article AS A, ArticleDetails AS AD, WrittenBy AS WB, Author AS AT 
+        WHERE AD.URL = A.URL 
+            AND A.ArticleID = WB.ArticleID 
+            AND WB.AuthorID = AT.AuthorID 
+            AND AT.AuthorName  = %s;""",
+            (author,))
     for row in cursor.fetchall():
         click.echo(row[0])
     click.echo("\n")
 
 def option5():
-    publisher = click.prompt("Enter the publisher:", type=str)
-    start = click.prompt("Enter the start date:", type=str)
-    end = click.prompt("Enter the end date:", type=str)
+    publisher = click.prompt("Enter the publisher", type=str)
+    start = click.prompt("Enter the start date (YYYY - M - D)", type=str)
+    end = click.prompt("Enter the end date", type=str)
     # create query
-    cursor.execute("SELECT AD.Headline, A.URL FROM Article AS A, ArticleDetails AS AD WHERE AD.URL = A.URL AND AD.PubName = P.PubName AND AD.PubName = '%s' AND A.DatePublished BETWEEN '%s' AND '%s' ORDER BY A.DatePublished;", (publisher, start, end))
+    cursor.execute("""
+                   SELECT AD.Headline, A.URL 
+                   FROM Article AS A, ArticleDetails AS AD, Publisher AS P, WrittenBy AS WB 
+                   WHERE AD.URL = A.URL
+                        AND A.ArticleID = WB.ArticleID 
+                        AND AD.PubName = P.PubName 
+                        AND AD.PubName = %s
+                        AND WB.Date BETWEEN %s 
+                        AND %s 
+                        ORDER BY WB.Date;""", (publisher, start, end))
     for row in cursor.fetchall():
         click.echo(row[0])
     click.echo("\n")
 
 
 def option6():
-    count = click.prompt("Enter the lower bound:", type=int)
+    count = click.prompt("Enter the lower bound", type=int)
     # create query
-    cursor.execute("SELECT AT.AuthorName FROM Author AS AT, WrittenBy AS WB, Claim AS C, CollectionOf AS CO WHERE AT.AuthorID = WB.AuthorID AND WB.ArticleID = CO.ArticleID AND CO.ClaimID = C.ClaimID GROUP BY AT.AuthorName HAVING COUNT(C.numCitations) > %s;", (count,))
+    cursor.execute("""
+                   SELECT AT.AuthorName 
+                   FROM Author AS AT, WrittenBy AS WB, Claim AS C, CollectionOf AS CO 
+                   WHERE AT.AuthorID = WB.AuthorID 
+                        AND WB.ArticleID = CO.ArticleID 
+                        AND CO.ClaimID = C.ClaimID 
+                        GROUP BY AT.AuthorName 
+                        HAVING COUNT(C.numCitations) > %s;""", (count,))
     for row in cursor.fetchall():
         click.echo(row[0])
     click.echo("\n")
 
 def option7():
-    type = click.prompt("Enter the type of claim:", type=str)
+    type = click.prompt("Enter the type of claim", type=str)
     # create query
-    cursor.execute("SELECT AD.Headline, A.URL FROM Article AS A, ArticleDetails AS AD, CollectionOf AS CO, Claim AS C WHERE AD.URL = A.URL AND A.ArticleID = CO.ArticleID AND CO.ClaimID = C.ClaimID AND C.ClaimType = '%s';", (type,))
+    cursor.execute("""
+                   SELECT DISTINCT AD.Headline, A.URL 
+                   FROM Article AS A, ArticleDetails AS AD, CollectionOf AS CO, Claim AS C 
+                   WHERE AD.URL = A.URL 
+                        AND A.ArticleID = CO.ArticleID 
+                        AND CO.ClaimID = C.ClaimID 
+                        AND C.type = %s;""", (type,))
     for row in cursor.fetchall():
         click.echo(row[0])
     click.echo("\n")
 
 def option8():
-    author = click.prompt("Enter the author:", type=str)
+    author = click.prompt("Enter the author", type=str)
     # create query
-    cursor.execute("SELECT C.ClaimType, AD.Headline FROM Article AS A, ArticleDetails AS AD, CollectionOf AS CO, Claim AS C, WrittenBy AS WB, Author AS AT WHERE AD.URL = A.URL AND A.ArticleID = CO.ArticleID AND CO.ClaimID = C.ClaimID AND A.ArticleID = WB.ArticleID AND WB.AuthorID = AT.AuthorID AND AT.AuthorName = '%s';", (author,))
+    cursor.execute("""
+                   SELECT C.type, AD.Headline FROM Article AS A, ArticleDetails AS AD, CollectionOf AS CO, Claim AS C, WrittenBy AS WB, Author AS AT 
+                   WHERE AD.URL = A.URL 
+                        AND A.ArticleID = CO.ArticleID 
+                        AND CO.ClaimID = C.ClaimID 
+                        AND A.ArticleID = WB.ArticleID 
+                        AND WB.AuthorID = AT.AuthorID 
+                        AND AT.AuthorName = %s;""", (author,))
     for row in cursor.fetchall():
-        click.echo(row[0])
+        click.echo(row)
     click.echo("\n")
 
 
 def option9():
-    count = click.prompt("Enter the lower bound:", type=int)
-    start = click.prompt("Enter the start date:", type=str)
-    end = click.prompt("Enter the end date:", type=str)
-    author = click.prompt("Enter the author:", type=str)
+    count = click.prompt("Enter the lower bound", type=int)
+    start = click.prompt("Enter the start date", type=str)
+    end = click.prompt("Enter the end date", type=str)
+    author = click.prompt("Enter the author", type=str)
     # create query
-    cursor.execute("SELECT AD.Headline FROM Article AS A, ArticleDetails AS AD, CollectionOf AS CO, Claim AS C, WrittenBy AS WB, Author AS AT WHERE AD.URL = A.URL AND A.ArticleID = CO.ArticleID AND CO.ClaimID = C.ClaimID AND A.ArticleID = WB.ArticleID AND WB.AuthorID = AT.AuthorID AND AT.AuthorName = '%s' AND C.ClaimType = 'Tertiary' AND C.numCitations > %s AND A.DatePublished BETWEEN '%s' AND '%s';", (author, count, start, end))
+    cursor.execute("""
+                   SELECT DISTINCT AD.Headline 
+                   FROM Article AS A, ArticleDetails AS AD, CollectionOf AS CO, Claim AS C, WrittenBy AS WB, Author AS AT 
+                   WHERE AD.URL = A.URL 
+                        AND A.ArticleID = CO.ArticleID 
+                        AND CO.ClaimID = C.ClaimID 
+                        AND A.ArticleID = WB.ArticleID 
+                        AND WB.AuthorID = AT.AuthorID 
+                        AND AT.AuthorName = %s 
+                        AND C.Type = 'Tertiary' 
+                        AND C.numCitations > %s 
+                        AND WB.Date BETWEEN %s AND %s;""", 
+                        (author, count, start, end))
     for row in cursor.fetchall():
         click.echo(row[0])
     click.echo("\n")
